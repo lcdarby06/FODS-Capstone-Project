@@ -1,0 +1,43 @@
+---
+title: "Project Proposal"
+author: "Laura Rose"
+date: "May 23, 2017"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Description of the Problem
+
+My company has difficulty forecasting certain ingredients for pharmaceutical products, also known as API (Active Pharmaceutical Ingredients). Active Pharmaceutical Ingredients are products that are used in formulating a consumer product, such as Tylenol or prescription pain relievers. In doing root cause analysis of the Mean Absolute Percent Error (MAPE) over the past six months, I found that a certain API SKU accounted for almost nine percent of the total variation from the forecast. The MAPE on this individual SKU was also high at 54% over the past year. The goal is to be under 30%. Of the many SKUs that contribute to MAPE, I thought this SKU was a good candidate for which to build a model since the demand history is fairly straightforward. Specifically, only one customer purchases this SKU and has purchased it for the past three years. The demand is seasonal and correlated with the flu season. The SKU is also an ingredient in Tylenol Extra Strength 500 mg. 
+
+## Description of the Client and Rationale for Working on this Problem
+
+As stated above, my client is my employer, which is paying for this workshop. There are many reasons for my company to want to forecast accurately. The more accurate the forecast, the better service we can provide to our customer because we will have the product at the right time. The more accurate the forecast, the less inventory we can carry because we are confident that we know what we will need to have and when we will need to have it. Additionally, the better our service, the more likely we are to attract new customers and have increased demand from current customers. Currently the company forecast for this SKU is based on input from the Sales team. However, as indicated by the MAPE, the Sales team sometimes has difficulty assessing the market and getting accurate information from our customer(s). The company also has a statistical forecasting software with models which are mostly a variation on a triple exponential smoothing model. I work on these models and tweak parameters, but a triple exponential smoothing model may not be the best choice for many SKUs, especially if the demand is sporadic or highly variable. On a related note, although this capstone project is focusing solely on one SKU, the company has several SKUs (also ingredients for Acetaminophen-type consumer products) for which the same or similiar model might be better than the current Sales input or exponential smoothing forecast. If this model works for this SKU, the approach may work for other similar SKUs which have the same explanatory variables. 
+
+## Description of Data
+
+Data used for this project will be historical company demand or shipment data, flu cases or Influenza-like Illness (ILI) cases data, and Tylenol Extra Strength 500 mg channel data (units that to go retail pharmacies, etc.) from IMS. I have already collected the data and will compile it on a spreadsheet to upload to R. The plan is to have three years of historical data, so the data would go back to early 2014. The flu data is in a weekly format, so I will need to aggregate this to monthly buckets. Another issue with the data is that if there was no demand/shipments in a given month, the entry will be missing. These will need to be notated as 0 in the data. This is fairly unusual given that this is a high-volume SKU, so most months there is demand/shipments.
+
+Another option if the monthly buckets forecasting approach does not seem to work is to forecast at a weekly level. To do this, I would need to interpolate the Tylenol data since it is not available in weekly buckets. Company sales order history is available in weekly format, so there would be no need to interpolate the monthly demand data. My company measures MAPE at a monthly level, so technically there is no need to break the forecast down into weekly buckets. However, more granular forecasting may yield better results when aggregated to and measured at the monthly level.
+
+A potential issue with this data is multicollinearity. In other words, the explanatory variables themselves are correlated which could make the results of the individual variables difficult to interpret. However, since these are all factors which are expected to be correlated with company demand, it seems best to include them in the model.
+
+Previously I had considered the potential issue of a Non Disclosure Agreement (NDA). However, my manager confirmed that it is okay to use the company data as long as I anonymize it.
+
+## Modeling Approach
+
+Having described the data, the big question is the modeling approach. The dependent variable will be company demand. The explanatory variables will be historical flu or ILI cases, historical Tylenol units sold to retail pharmacies, etc., and historical demand. Without further knowledge of more complex data science techniques, at this point I am planning to use a linear regression modeling approach. I am certainly open to other techniques if linear regression doesn't seem to be working for this data set. 
+
+## Deliverables from the Project
+
+After estimating the model, I wil submit my code to Github. I will also write a paper detailing exploratory data analysis, statistical analysis, and the results of the model. If it seems that the model will be feasible to use for company forecasting, I will also compile a slide deck detailing my results. This would be a high-level overview, suitable for someone in Marketing or Supply Chain who may want to see the model results but may not be interested in the specifics of the data analysis.
+
+
+
+
+
