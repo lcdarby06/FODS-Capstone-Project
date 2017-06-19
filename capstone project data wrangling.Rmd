@@ -1,0 +1,111 @@
+---
+title: "Data Wrangling for Project"
+author: "Laura Rose"
+date: "May 30, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Load Libraries
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(readr)
+library(stringi)
+```
+
+## Read Data into R
+  There are three files which contain data. The shipments data is in a weekly format, the tylenol data is in monthly format, and the flu data (contains both flu cases and Influenze-like Illness cases) is in weekly format. The flu data is from the CDC, and the weekly shipments data is proprietary data. The weekly shipments data has been anonymized so that a Non-Disclosure Agreement is not needed from the company. The flu data is monthly units of 500 mg Tylenol Extra Strength sold into the channels (retail pharmacies, hospitals, food stores, etc.). This data is from IMS. 
+
+```{r}
+shipments_original <- read.csv("C:/Users/laura.rose/Documents/shipments.csv", strip.white = TRUE)
+tylenol <- read.csv("C:/Users/laura.rose/Documents/tylenol.csv", strip.white = TRUE)
+flu_original <- read.csv("C:/Users/laura.rose/Documents/flu_data.csv", strip.white = TRUE)
+
+```
+
+## Create new variable YearWeek
+  The YearWeek variable will be a concatenation of Year and Week. 
+  
+```{r}
+shipments_original$YearWeek <- paste(shipments_original$Year, shipments_original$Week, sep = "")
+flu_original$YearWeek <- paste(flu_original$YEAR, flu_original$WEEK, sep = "")
+```
+
+## Sum shipments across week
+  Since the YearWeek variable now exists, shipments can be summed across the YearWeek variable. This is necessary because the shipments data is based on orders by week, and sometimes there were multiple orders in the same week.
+
+```{r}
+shipments_original <- shipments_original %>% group_by(YearWeek) %>% mutate(weekly_shipments=sum(Shipments))
+```
+## Create new variable
+  However, there are currently duplicates in the weekly_shipments variable. The previous code summed the orders, but kept all lines. Creating a new variable which is a concatenation of YearWeek and weekly_shipments will allow for removal of the duplicates in the next step.
+
+```{r}
+shipments_original <- shipments_original %>% unite(YearWeekShipments, YearWeek, weekly_shipments, sep = "-", remove = FALSE)
+```
+## Remove duplicates from the shipments_original variable
+  Based on the matrix structure of shipments_original, deleting the duplicates in YearWeekShipments will keep the unique rows in the weekly_shipments variable.
+
+```{r}
+shipments_original <- shipments_original %>% distinct(YearWeekShipments, .keep_all = TRUE)
+```
+## Lookup weekly shipments variable to flu data
+  This is joining the flu data and the shipments original to create a new data frame. Because the shipments_original is left-joined to the flu_original, the weeks where there were no shipments are now populated with NA's.
+
+```{r}
+project_data <- left_join(flu_original, shipments_original, by = "YearWeek")
+```
+## Replace n/a's in weekly shipments variable
+  This replaces the NAs in the weekly shipments variable with 0s.
+
+```{r}
+project_data$weekly_shipments <- replace(project_data$weekly_shipments, is.na(project_data$weekly_shipments), 0)
+```
+## Divide months by 4 or 5 to get weekly data as appropriate
+  This function divides the monthly tylenol data into 4 or 5 and repeats this weekly value by the number of weeks in the month. February, May, August, November, and December 2014 are the 5-week months. The list populated by this function is then changed to a vector format.
+
+```{r}
+names(tylenol) <- make.names(names(tylenol)) 
+tylenol$month <- gsub('.{3}$', '', tylenol$Date) 
+tylenol$Date <- as.character(tylenol$Date)
+weekly_tylenol <- list()
+for(j in seq(nrow(tylenol))){
+  ifelse(sum(startsWith(c("Feb", "May", "Aug", "Nov"),
+                        tylenol$month[j])) == 1 | 
+         sum(startsWith("Dec-14", tylenol$Date[j])) == 1, 
+         weekly_tylenol[[j]] <- rep(tylenol$Tylenol.Units[j]/5, 5),
+         weekly_tylenol[[j]] <- rep(tylenol$Tylenol.Units[j]/4, 4))
+  }
+
+## change to vector format
+weekly_tylenol_vec <- unlist(weekly_tylenol)
+```
+## Subset project_data to just have 183 observations instead of 188 to match with weekly_tylenol data
+  The monthly tylenol data goes through the end of March, as opposed to the remainder of the data which goes through the first week of May.
+
+```{r}
+project_data_2 <- project_data[1:183, ]
+```
+## Bind weekly_tylenol to project data
+  The weekly_tylenol_vec is converted to a data frame in order to bind to the project_data_2 data frame.
+
+```{r}
+weekly_tylenol_vec2 <- as.data.frame(weekly_tylenol_vec)
+project_data_2 <- bind_cols(project_data_2, weekly_tylenol_vec2)
+```
+## Create final project data frame
+  This code selects the necessary variables for the model estimation.
+
+```{r}
+final_project_data <- project_data_2[c("YearWeek", "Total.Flu", "Total.ILI", "weekly_tylenol_vec", "weekly_shipments")]
+```
+## Write data to csv
+
+```{r}
+write.csv(final_project_data, "C:/Users/laura.rose/Documents/final_project_data.csv")
+```
